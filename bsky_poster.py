@@ -3,11 +3,11 @@ import getpass
 import json
 import requests
 import sys
-import urllib3
 from bs4 import BeautifulSoup
 import configparser
 from datetime import datetime, timezone
 import re
+import inspect
 # from pathlib import Path
 
 # Constants
@@ -17,9 +17,8 @@ DID_URL = "https://bsky.social/xrpc/com.atproto.identity.resolveHandle"
 API_KEY_URL = "https://bsky.social/xrpc/com.atproto.server.createSession"  # The endpoint to request the API key
 
 def get_did(handle):
-    http = urllib3.PoolManager()
-    did_resolve = http.request("GET", DID_URL, fields={"handle": handle})
-    return json.loads(did_resolve.data)["did"]
+    did_resolve = requests.get(DID_URL + f"?handle={handle}")
+    return json.loads(did_resolve.content)["did"]
 
 def get_hashtags(description):
     hashtags = re.findall(r'#[-A-Za-z0-9]*',description)
@@ -27,8 +26,6 @@ def get_hashtags(description):
     return hashtags
 
 def get_api_key(did, app_password):
-    http = urllib3.PoolManager()  # Initializes a pool manager for HTTP requests
-
     # Data to be sent to the server
     post_data = {
         "identifier": did,  # The user's DID
@@ -40,10 +37,10 @@ def get_api_key(did, app_password):
     }
 
     # Send a POST request with the required data to obtain the API key
-    api_key_response = http.request("POST", API_KEY_URL, headers=headers, body=json.dumps(post_data))
+    api_key_response = requests.post(API_KEY_URL, headers=headers, json=post_data)
 
     # Parse the response to extract the API key
-    return json.loads(api_key_response.data)["accessJwt"]
+    return json.loads(api_key_response.content)["accessJwt"]
 
 def get_rss_content(feeduri, key, last_post, config, feed):
 
