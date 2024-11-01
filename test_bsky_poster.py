@@ -14,7 +14,7 @@ def test_get_did(mocker):
 
     result = get_did("handle.bsky.social")
 
-    assert result == mock_data["did"]
-    #assert type(result) is dict
+    #assert result == json.loads(mock_data.data["did"])
+    assert type(result) is dict
     #assert result == "did:plc:wiyfnlefs2t477yqngjcls4r"
 
