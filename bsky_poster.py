@@ -24,7 +24,19 @@ def get_did(handle):
 def get_hashtags(description):
     hashtags = re.findall(r'#[-A-Za-z0-9]*',description)
     hashtags = ([s.strip('#') for s in hashtags])
-    return hashtags
+    if not hashtags:
+        return_value = False
+    else:
+        facets = []
+        for tag in hashtags:
+            facets.append({
+                "$type": "app.bsky.richtext.facet#tag",
+                "tag": tag,
+                })
+        return_value = facets
+
+    return return_value
+
 
 def get_api_key(did, app_password):
     # Data to be sent to the server
@@ -43,7 +55,7 @@ def get_api_key(did, app_password):
     # Parse the response to extract the API key
     return json.loads(api_key_response.content)["accessJwt"]
 
-def get_rss_content(feeduri, key, last_post, config, feed):
+def get_rss_content(feeduri, last_post, config, feed):
 
     # Parse the RSS feed
     feedout = feedparser.parse(feeduri)
@@ -63,13 +75,9 @@ def get_rss_content(feeduri, key, last_post, config, feed):
         with open(BLUESKY_POSTER_CONFIG, 'w') as configfile:
             config[feed]['lastpost'] = latest_post_guid
             config.write(configfile)
-    # You can further expand this by including other details like the post's published date,
-    # author, summary, etc., depending on your needs.
-    embed_card = fetch_embed_url_card(key, latest_post_link)
-#    print(latest_post_description)
-    return latest_post_title, latest_post_link, embed_card
+    return latest_post_title, latest_post_description, latest_post_link
 
-def prepare_post_for_bluesky(title, link, embed):
+def prepare_post_for_bluesky(title, link, embed, hashtags):
     """Convert the RSS content into a format suitable for Bluesky."""
 
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -81,6 +89,7 @@ def prepare_post_for_bluesky(title, link, embed):
         "text": post_text,
         "createdAt": now
             }
+    post_structure["facets"] = hashtags
     post_structure["embed"] = embed
     return post_structure
 
@@ -109,7 +118,7 @@ def publish_on_bluesky(post_structure, did, key):
     return response
 
 
-def fetch_embed_url_card(key, url):
+def get_embed_url_card(key, url):
 
     # the required fields for every embed card
     card = {
@@ -169,9 +178,11 @@ def main():
         feeduri = config[feed]['uri']
         did = get_did(handle)
         key = get_api_key(did, app_password)
-        title, link, embed = get_rss_content(feeduri, key, last_post, config, feed)
+        title, description, link = get_rss_content(feeduri, last_post, config, feed)
         if title:
-            post_structure = prepare_post_for_bluesky(title, link, embed)
+            embed_card = get_embed_url_card(key, link)
+            hashtags = get_hashtags(description)
+            post_structure = prepare_post_for_bluesky(title, link, embed_card, hashtags)
             response = publish_on_bluesky(post_structure, did, key)
             return response
 
