@@ -29,9 +29,18 @@ def get_hashtags(description):
     else:
         facets = []
         for tag in hashtags:
+            indexes = (re.search(tag, description))
             facets.append({
-                "$type": "app.bsky.richtext.facet#tag",
-                "tag": tag,
+                "index": {
+                    "byteStart": indexes.span()[0]-1,
+                    "byteEnd": indexes.span()[1],
+                    },
+                "features": [
+                    {
+                        "$type": "app.bsky.richtext.facet#tag",
+                        "tag": tag,
+                    }
+                ],
                 })
         return_value = facets
 
@@ -66,9 +75,6 @@ def get_rss_content(feeduri, last_post, config, feed):
     latest_post_link = feedout.entries[0].link
     latest_post_guid = feedout.entries[0].guid
 
-    # hashtags = get_hashtags(latest_post_description)
-    # sys.exit()
-
     if latest_post_guid == last_post:
         return False, False, False
     else:
@@ -77,12 +83,12 @@ def get_rss_content(feeduri, last_post, config, feed):
             config.write(configfile)
     return latest_post_title, latest_post_description, latest_post_link
 
-def prepare_post_for_bluesky(title, link, embed, hashtags):
+def prepare_post_for_bluesky(title, link, embed, description):
     """Convert the RSS content into a format suitable for Bluesky."""
-
+    hashtags = get_hashtags(f"{title}\n{description}")
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post's body text
-    post_text = f"{title}"
+    post_text = f"{title}\n{description}"
     # The post structure for Bluesky
     post_structure = {
         "$type": "app.bsky.feed.post",
@@ -181,9 +187,9 @@ def main():
         title, description, link = get_rss_content(feeduri, last_post, config, feed)
         if title:
             embed_card = get_embed_url_card(key, link)
-            hashtags = get_hashtags(description)
-            post_structure = prepare_post_for_bluesky(title, link, embed_card, hashtags)
+            post_structure = prepare_post_for_bluesky(title, link, embed_card, description)
             response = publish_on_bluesky(post_structure, did, key)
+            #response = post_structure
             return response
 
 if __name__ == '__main__':
