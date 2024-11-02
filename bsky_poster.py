@@ -18,7 +18,8 @@ API_KEY_URL = "https://bsky.social/xrpc/com.atproto.server.createSession"  # The
 
 def get_did(handle):
     did_resolve = requests.get(DID_URL + f"?handle={handle}")
-    return json.loads(did_resolve.content)["did"]
+    response = json.loads(did_resolve.content)["did"]
+    return response
 
 def get_hashtags(description):
     hashtags = re.findall(r'#[-A-Za-z0-9]*',description)
@@ -86,8 +87,6 @@ def prepare_post_for_bluesky(title, link, embed):
 def publish_on_bluesky(post_structure, did, key):
     """Publish the structured post on Bluesky."""
 
-    http = urllib3.PoolManager()   # Initializes a pool manager for HTTP requests
-
     # The complete record for the Bluesky post, including our structured content
     post_record = {
         "collection": "app.bsky.feed.post",
@@ -95,17 +94,18 @@ def publish_on_bluesky(post_structure, did, key):
         "record": post_structure
     }
 
-    headers = {
-        "Content-Type": "application/json",       # Specifies the format of the data being sent
-        "Authorization": f"Bearer {key}"          # The API key for authenticated posting
-    }
-
     # Send a POST request to publish the post on Bluesky
-    post_request = http.request("POST", BLUESKY_API_ENDPOINT, body=json.dumps(post_record), headers=headers)
+    # post_request = requests.post(BLUESKY_API_ENDPOINT, body=json.dumps(post_record), headers=headers)
 
-    # Parse the response for any necessary information, such as post ID or confirmation status
-    response = json.loads(post_request.data)
-
+    post_request = requests.post(
+            BLUESKY_API_ENDPOINT,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {key}"
+            },
+            data=json.dumps(post_record),
+        )
+    response = json.loads(post_request.content)
     return response
 
 

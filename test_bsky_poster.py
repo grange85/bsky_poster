@@ -5,13 +5,13 @@ def test_get_hashtags():
     assert get_hashtags(" Some rubbish here with some #hashtags and other #interesting stuff") == ['hashtags', 'interesting']
         
 def test_get_did(mocker):
-    mock_data = {"did":"did:plc:wiyfnlefs2t477yqngjcls4r"}
+    mock_data = {"did": "did:plc:wiyfnlefs2t477yqngjcls4r"}
 
     mock_response = mocker.MagicMock()
     mock_response.json.return_value = mock_data
 
-#    mocker.patch("urllib3.PoolManager", return_value = mock_response.json.return_value)
-    mocker.patch("urllib3.PoolManager", return_value = mock_data)
+    print(mock_response.json.return_value)
+    mocker.patch("requests.get", return_value=mock_response)
 
     result = get_did("handle.bsky.social")
 
