@@ -64,31 +64,32 @@ def get_api_key(did, app_password):
     # Parse the response to extract the API key
     return json.loads(api_key_response.content)["accessJwt"]
 
-def get_rss_content(feeduri, last_post, config, feed):
+def get_rss_content(postdata):
 
     # Parse the RSS feed
-    feedout = feedparser.parse(feeduri)
+    feedout = feedparser.parse(postdata['feeduri'])
 
     # If you plan to post the latest content, it's usually the first entry in the feed
-    latest_post_title = feedout.entries[0].title
-    latest_post_description = feedout.entries[0].description
-    latest_post_link = feedout.entries[0].link
-    latest_post_guid = feedout.entries[0].guid
+    postdata['title'] = feedout.entries[0].title
+    postdata['description'] = feedout.entries[0].description
+    postdata['link'] = feedout.entries[0].link
+    postdata['guid'] = feedout.entries[0].guid
 
-    if latest_post_guid == last_post:
-        return False, False, False
+    if postdata['guid'] == postdata['lastpost']:
+        return False
     else:
         with open(BLUESKY_POSTER_CONFIG, 'w') as configfile:
-            config[feed]['lastpost'] = latest_post_guid
-            config.write(configfile)
-    return latest_post_title, latest_post_description, latest_post_link
+            print("debug:removed config update")
+            configfile[postdata['feed']]['lastpost'] = postdata['guid']
+            configfile.write(configfile)
+    return postdata
 
-def prepare_post_for_bluesky(title, link, embed, description):
+def prepare_post_for_bluesky(postdata):
     """Convert the RSS content into a format suitable for Bluesky."""
-    hashtags = get_hashtags(f"{title}\n{description}")
+    hashtags = get_hashtags(f"{postdata['title']}\n{postdata['description']}")
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post's body text
-    post_text = f"{title}\n{description}"
+    post_text = f"{postdata['title']}\n{postdata['description']}"
     # The post structure for Bluesky
     post_structure = {
         "$type": "app.bsky.feed.post",
@@ -96,7 +97,7 @@ def prepare_post_for_bluesky(title, link, embed, description):
         "createdAt": now
             }
     post_structure["facets"] = hashtags
-    post_structure["embed"] = embed
+    post_structure["embed"] = postdata['embed_card']
     return post_structure
 
 def publish_on_bluesky(post_structure, did, key):
@@ -134,7 +135,9 @@ def get_embed_url_card(key, url):
     }
 
     # fetch the HTML
-    resp = requests.get(url)
+    resp = requests.get(url, headers={
+        "User-Agent": "Grange85Bot/0.0 (https://en.wikipedia.org/wiki/User:Grange85)",
+        })
     resp.encoding = 'utf-8'
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -161,7 +164,8 @@ def get_embed_url_card(key, url):
             "https://bsky.social/xrpc/com.atproto.repo.uploadBlob",
             headers={
                 "Content-Type": "image/jpg",
-                "Authorization": f"Bearer {key}"
+                "Authorization": f"Bearer {key}",
+                "User-Agent": "Grange85Bot/0.0 (https://en.wikipedia.org/wiki/User:Grange85)",
             },
             data=resp.content,
         )
@@ -178,19 +182,24 @@ def main():
     config.read(BLUESKY_POSTER_CONFIG)
     feedlist = config.sections()
     for feed in feedlist:
-        app_password = config[feed]['appw']
-        handle = config[feed]['user']
-        last_post = config[feed]['lastpost']
-        feeduri = config[feed]['uri']
-        did = get_did(handle)
-        key = get_api_key(did, app_password)
-        title, description, link = get_rss_content(feeduri, last_post, config, feed)
-        if title:
-            embed_card = get_embed_url_card(key, link)
-            post_structure = prepare_post_for_bluesky(title, link, embed_card, description)
-            response = publish_on_bluesky(post_structure, did, key)
-            #response = post_structure
-            return response
+        postdata = {
+                "feed": feed,
+                "app_password": config[feed]['appw'],
+                "handle": config[feed]['user'],
+                "lastpost": config[feed]['lastpost'],
+                "feeduri": config[feed]['uri'],
+                } 
+
+        postdata = get_rss_content(postdata)
+        did = get_did(postdata['handle'])
+        key = get_api_key(did, postdata['app_password'])
+        if postdata['title']:
+            postdata['embed_card'] = get_embed_url_card(key, postdata['link'])
+            post_structure = prepare_post_for_bluesky(postdata)
+            #response = publish_on_bluesky(post_structure, did, key)
+            response = post_structure
+            print(response)
+    return True
 
 if __name__ == '__main__':
     sys.exit(main())  
