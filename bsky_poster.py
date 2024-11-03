@@ -78,10 +78,11 @@ def get_rss_content(postdata):
     if postdata['guid'] == postdata['lastpost']:
         return False
     else:
+        config = configparser.ConfigParser()
+        config.read(BLUESKY_POSTER_CONFIG)
         with open(BLUESKY_POSTER_CONFIG, 'w') as configfile:
-            print("debug:removed config update")
-            configfile[postdata['feed']]['lastpost'] = postdata['guid']
-            configfile.write(configfile)
+            config[postdata['feed']]['lastpost'] = postdata['guid']
+            config.write(configfile)
     return postdata
 
 def prepare_post_for_bluesky(postdata):
@@ -110,9 +111,6 @@ def publish_on_bluesky(post_structure, did, key):
         "record": post_structure
     }
 
-    # Send a POST request to publish the post on Bluesky
-    # post_request = requests.post(BLUESKY_API_ENDPOINT, body=json.dumps(post_record), headers=headers)
-
     post_request = requests.post(
             BLUESKY_API_ENDPOINT,
             headers={
@@ -135,9 +133,10 @@ def get_embed_url_card(key, url):
     }
 
     # fetch the HTML
-    resp = requests.get(url, headers={
-        "User-Agent": "Grange85Bot/0.0 (https://en.wikipedia.org/wiki/User:Grange85)",
-        })
+    headers = {
+            "User-Agent": "Grange85Bot/0.0 (https://en.wikipedia.org/wiki/User:Grange85)",
+            }
+    resp = requests.get(url, headers=headers)
     resp.encoding = 'utf-8'
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -157,7 +156,7 @@ def get_embed_url_card(key, url):
         # naively turn a "relative" URL (just a path) into a full URL, if needed
         if "://" not in img_url:
             img_url = url + img_url
-        resp = requests.get(img_url)
+        resp = requests.get(img_url, headers=headers)
         resp.raise_for_status()
 
         blob_resp = requests.post(
