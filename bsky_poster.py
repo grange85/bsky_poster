@@ -187,16 +187,17 @@ def main():
                 "handle": config[feed]['user'],
                 "lastpost": config[feed]['lastpost'],
                 "feeduri": config[feed]['uri'],
-                } 
+            } 
+        
 
         postdata = get_rss_content(postdata)
-        did = get_did(postdata['handle'])
-        key = get_api_key(did, postdata['app_password'])
-        if postdata['title']:
+        if postdata:
+            did = get_did(postdata['handle'])
+            key = get_api_key(did, postdata['app_password'])
             postdata['embed_card'] = get_embed_url_card(key, postdata['link'])
             post_structure = prepare_post_for_bluesky(postdata)
-            #response = publish_on_bluesky(post_structure, did, key)
-            response = post_structure
+            response = publish_on_bluesky(post_structure, did, key)
+            #response = post_structure
             print(response)
     return True
 
