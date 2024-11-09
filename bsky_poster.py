@@ -136,6 +136,9 @@ def get_embed_url_card(key, url):
     headers = {
             "User-Agent": "Grange85Bot/0.0 (https://en.wikipedia.org/wiki/User:Grange85)",
             }
+    headers2 = {
+            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0",
+            }
     resp = requests.get(url, headers=headers)
     resp.encoding = 'utf-8'
     resp.raise_for_status()
@@ -156,7 +159,7 @@ def get_embed_url_card(key, url):
         # naively turn a "relative" URL (just a path) into a full URL, if needed
         if "://" not in img_url:
             img_url = url + img_url
-        resp = requests.get(img_url, headers=headers)
+        resp = requests.get(img_url, headers=headers2)
         resp.raise_for_status()
 
         blob_resp = requests.post(
