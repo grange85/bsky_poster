@@ -90,6 +90,9 @@ def prepare_post_for_bluesky(postdata):
     hashtags = get_hashtags(f"{postdata['title']}\n{postdata['description']}")
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post's body text
+    postdata['description'] = re.sub('<[^<]+?>', '', postdata['description'])
+    postdata['description'] = re.sub(r'\n+', '\n', postdata['description']).strip()
+
     post_text = f"{postdata['title']}\n{postdata['description']}"
     # The post structure for Bluesky
     post_structure = {
