@@ -87,11 +87,12 @@ def get_rss_content(postdata):
 
 def prepare_post_for_bluesky(postdata):
     """Convert the RSS content into a format suitable for Bluesky."""
-    hashtags = get_hashtags(f"{postdata['title']}\n{postdata['description']}")
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post's body text
     postdata['description'] = re.sub('<[^<]+?>', '', postdata['description'])
     postdata['description'] = re.sub(r'\n+', '\n', postdata['description']).strip()
+
+    hashtags = get_hashtags(f"{postdata['title']}\n{postdata['description']}")
 
     post_text = f"{postdata['title']}\n{postdata['description']}"
     # The post structure for Bluesky
