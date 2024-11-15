@@ -101,7 +101,8 @@ def prepare_post_for_bluesky(postdata):
         "text": post_text,
         "createdAt": now
             }
-    post_structure["facets"] = hashtags
+    if post_structure["facets"] != False
+        post_structure["facets"] = hashtags
     post_structure["embed"] = postdata['embed_card']
     return post_structure
 
