@@ -6,6 +6,7 @@ import sys
 from bs4 import BeautifulSoup
 import configparser
 from datetime import datetime, timezone
+from pprint import pprint
 import re
 import inspect
 # from pathlib import Path
@@ -22,18 +23,18 @@ def get_did(handle):
     return response
 
 def get_hashtags(description):
-    hashtags = re.findall(r'#[-A-Za-z0-9]*',description)
+    hashtags = re.findall(r'#[A-Za-z][-A-Za-z0-9]*',description)
     hashtags = ([s.strip('#') for s in hashtags])
     if not hashtags:
         return_value = False
     else:
         facets = []
         for tag in hashtags:
-            indexes = (re.search(tag, description))
+            indexes = re.search(f"#{tag}", description)
             facets.append({
                 "index": {
-                    "byteStart": indexes.span()[0]-1,
-                    "byteEnd": indexes.span()[1],
+                    "byteStart": indexes.span()[0],
+                    "byteEnd": indexes.span()[1]+1,
                     },
                 "features": [
                     {
@@ -43,7 +44,6 @@ def get_hashtags(description):
                 ],
                 })
         return_value = facets
-
     return return_value
 
 
@@ -71,7 +71,7 @@ def get_rss_content(postdata):
 
     # If you plan to post the latest content, it's usually the first entry in the feed
     postdata['title'] = feedout.entries[0].title
-    postdata['description'] = feedout.entries[0].description
+    postdata['description'] = feedout.entries[0].description.replace("’","'")
     postdata['link'] = feedout.entries[0].link
     postdata['guid'] = feedout.entries[0].guid
 
@@ -189,6 +189,7 @@ def main():
     config.read(BLUESKY_POSTER_CONFIG)
     feedlist = config.sections()
     for feed in feedlist:
+        print(f"Processing {feed}")
         postdata = {
                 "feed": feed,
                 "app_password": config[feed]['appw'],
