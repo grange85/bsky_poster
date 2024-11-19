@@ -71,7 +71,7 @@ def get_rss_content(postdata):
 
     # If you plan to post the latest content, it's usually the first entry in the feed
     postdata['title'] = feedout.entries[0].title
-    postdata['description'] = feedout.entries[0].description.replace("’","'")
+    postdata['description'] = feedout.entries[0]
     postdata['link'] = feedout.entries[0].link
     postdata['guid'] = feedout.entries[0].guid
 
@@ -90,8 +90,9 @@ def prepare_post_for_bluesky(postdata):
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post's body text
     postdata['description'] = re.sub('<[^<]+?>', '', postdata['description'])
-    postdata['description'] = re.sub(r'\n+', '\n', postdata['description']).strip()
-
+    postdata['description'] = re.sub(r'\n+', '\n', postdata['description'])
+    postdata['description'] = re.sub(r'’', '\'', postdata['description'])
+    postdata['description'] = re.sub(r'grange85 posted a photo:\n', '', postdata['description']).strip()
     hashtags = get_hashtags(f"{postdata['title']}\n{postdata['description']}")
 
     post_text = f"{postdata['title']}\n{postdata['description']}"
