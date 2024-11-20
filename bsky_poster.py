@@ -71,7 +71,7 @@ def get_rss_content(postdata):
 
     # If you plan to post the latest content, it's usually the first entry in the feed
     postdata['title'] = feedout.entries[0].title
-    postdata['description'] = feedout.entries[0]
+    postdata['description'] = feedout.entries[0].description
     postdata['link'] = feedout.entries[0].link
     postdata['guid'] = feedout.entries[0].guid
 
