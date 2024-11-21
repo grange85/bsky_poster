@@ -17,13 +17,19 @@ BLUESKY_POSTER_CONFIG = "/home/" + getpass.getuser() + "/.config/bluesky-poster/
 DID_URL = "https://bsky.social/xrpc/com.atproto.identity.resolveHandle"
 API_KEY_URL = "https://bsky.social/xrpc/com.atproto.server.createSession"  # The endpoint to request the API key
 
+debug = False
+
 def get_did(handle):
+    if debug:
+        print("get_did...")
     did_resolve = requests.get(DID_URL + f"?handle={handle}")
     response = json.loads(did_resolve.content)["did"]
     return response
 
 def get_hashtags(description):
-    hashtags = re.findall(r'#[A-Za-z][-A-Za-z0-9]*',description)
+    if debug:
+        print("getting hashtags...")
+    hashtags = re.findall(r'#[A-Za-z][-\'A-Za-z0-9]*',description)
     hashtags = ([s.strip('#') for s in hashtags])
     if not hashtags:
         return_value = False
@@ -34,12 +40,12 @@ def get_hashtags(description):
             facets.append({
                 "index": {
                     "byteStart": indexes.span()[0],
-                    "byteEnd": indexes.span()[1]+1,
+                    "byteEnd": indexes.span()[1],
                     },
                 "features": [
                     {
                         "$type": "app.bsky.richtext.facet#tag",
-                        "tag": tag,
+                        "tag": re.sub('\'', '', tag),
                     }
                 ],
                 })
@@ -48,6 +54,8 @@ def get_hashtags(description):
 
 
 def get_api_key(did, app_password):
+    if debug:
+        print("getting api key...")
     # Data to be sent to the server
     post_data = {
         "identifier": did,  # The user's DID
@@ -65,6 +73,8 @@ def get_api_key(did, app_password):
     return json.loads(api_key_response.content)["accessJwt"]
 
 def get_rss_content(postdata):
+    if debug:
+        print("getting rss content...")
 
     # Parse the RSS feed
     feedout = feedparser.parse(postdata['feeduri'])
@@ -86,6 +96,8 @@ def get_rss_content(postdata):
     return postdata
 
 def prepare_post_for_bluesky(postdata):
+    if debug:
+        print("preparing post for Bluesky...")
     """Convert the RSS content into a format suitable for Bluesky."""
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post's body text
@@ -108,6 +120,8 @@ def prepare_post_for_bluesky(postdata):
     return post_structure
 
 def publish_on_bluesky(post_structure, did, key):
+    if debug:
+        print("publishing to Bluesky...")
     """Publish the structured post on Bluesky."""
 
     # The complete record for the Bluesky post, including our structured content
@@ -116,8 +130,8 @@ def publish_on_bluesky(post_structure, did, key):
         "repo": did,    # The unique DID of our account
         "record": post_structure
     }
-
-    post_request = requests.post(
+    if debug != True:
+        post_request = requests.post(
             BLUESKY_API_ENDPOINT,
             headers={
                 "Content-Type": "application/json",
@@ -125,11 +139,15 @@ def publish_on_bluesky(post_structure, did, key):
             },
             data=json.dumps(post_record),
         )
-    response = json.loads(post_request.content)
+        response = json.loads(post_request.content)
+    else:
+        response = post_record
     return response
 
 
 def get_embed_url_card(key, url):
+    if debug:
+        print("getting embed card...")
 
     # the required fields for every embed card
     card = {
@@ -202,13 +220,18 @@ def main():
 
         postdata = get_rss_content(postdata)
         if postdata:
+
             did = get_did(postdata['handle'])
             key = get_api_key(did, postdata['app_password'])
             postdata['embed_card'] = get_embed_url_card(key, postdata['link'])
             post_structure = prepare_post_for_bluesky(postdata)
             response = publish_on_bluesky(post_structure, did, key)
-            #response = post_structure
-            print(response)
+            if debug:
+                response = post_structure
+            if "validationStatus" in response:
+                print(response['validationStatus'])
+            else:
+                print(response)
     return True
 
 if __name__ == '__main__':
