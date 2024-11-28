@@ -29,6 +29,7 @@ def get_did(handle):
 def get_hashtags(description):
     if debug:
         print("getting hashtags...")
+        print(description)
     hashtags = re.findall(r'#[A-Za-z][-\'A-Za-z0-9]*',description)
     hashtags = ([s.strip('#') for s in hashtags])
     if not hashtags:
@@ -37,6 +38,8 @@ def get_hashtags(description):
         facets = []
         for tag in hashtags:
             indexes = re.search(f"#{tag}", description)
+            if debug:
+                print(f"{tag} | {indexes.span()[0]} | {indexes.span()[1]}")
             facets.append({
                 "index": {
                     "byteStart": indexes.span()[0],
@@ -50,6 +53,8 @@ def get_hashtags(description):
                 ],
                 })
         return_value = facets
+    if debug:
+        return hashtags
     return return_value
 
 
@@ -104,10 +109,10 @@ def prepare_post_for_bluesky(postdata):
     postdata['description'] = re.sub('<[^<]+?>', '', postdata['description'])
     postdata['description'] = re.sub(r'\n+', '\n', postdata['description'])
     postdata['description'] = re.sub(r'’', '\'', postdata['description'])
-    postdata['description'] = re.sub(r'grange85 posted a photo:\n', '', postdata['description']).strip()
-    hashtags = get_hashtags(f"{postdata['title']}\n{postdata['description']}")
+    postdata['description'] = re.sub(r'grange85 posted a photo:\n', '', postdata['description'])
+    post_text = f"{postdata['title'].strip()}\n{postdata['description'].strip()}"
+    hashtags = get_hashtags(post_text)
 
-    post_text = f"{postdata['title']}\n{postdata['description']}"
     # The post structure for Bluesky
     post_structure = {
         "$type": "app.bsky.feed.post",
