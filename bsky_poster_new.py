@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 import configparser
 from datetime import datetime, timezone
 from pprint import pprint
+from html import unescape
 import re
 import inspect
 
@@ -47,7 +48,7 @@ def get_rss_content(feeduri):
 
     postdata = {}
     feedout = feedparser.parse(feeduri)
-    postdata['title'] = feedout.entries[0].title.strip()
+    postdata['title'] = unescape(feedout.entries[0].title.strip())
     postdata['description'] = feedout.entries[0].description
     postdata['link'] = feedout.entries[0].link
     postdata['guid'] = feedout.entries[0].guid
@@ -63,26 +64,39 @@ def get_rss_content(feeduri):
 
     # add title
     postdata['content'] = f"{postdata['title'].strip()}\n{post_content}"
-
     postdata['hashtags'] = get_hashtags(postdata['content'])
+    postdata['uri'] = get_url(postdata['content'])
 
     return postdata
 
 def get_hashtags(description):
     hashtags = re.findall(r'#[A-Za-z][-\'A-Za-z0-9]*',description)
+    print(hashtags)
     hashtags = ([s.strip('#') for s in hashtags])
     hashreturn = {}
     for tag in hashtags:
-        indexes = re.search(f"#{tag}", description)
-        hashreturn[tag] = [indexes.span()[0],indexes.span()[1]]
-
+        startByte = description.encode().find(("#" + tag).encode())
+        endByte = startByte + len(tag.encode())+1
+        hashreturn[tag] = [startByte,endByte]
     if not hashtags:
         return_value = False
     else:
         return hashreturn
 
+def get_url(description):
+    if description.find("https://") > 0:
+        uri = re.search(r'https:[^( |$)]*', description)
+        startByte = description.encode().find(("https://").encode())
+        endByte = description.encode().find((" ").encode(), startByte)
+        if endByte == -1:
+            endByte = len(description.encode())
+        urireturn = {uri.group(): [startByte, endByte]}
+        return urireturn
+    else:
+        return False
+
 def main():
-    rssdata = get_rss_content('https://www.fullofwishes.co.uk/feed-excerpts.xml')
+    rssdata = get_rss_content(r'dummy-feed.xml')
     print(rssdata)
 if __name__ == '__main__':
     sys.exit(main())  

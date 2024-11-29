@@ -17,7 +17,7 @@ BLUESKY_POSTER_CONFIG = "/home/" + getpass.getuser() + "/.config/bluesky-poster/
 DID_URL = "https://bsky.social/xrpc/com.atproto.identity.resolveHandle"
 API_KEY_URL = "https://bsky.social/xrpc/com.atproto.server.createSession"  # The endpoint to request the API key
 
-debug = False
+debug = True
 
 def get_did(handle):
     if debug:
@@ -53,8 +53,6 @@ def get_hashtags(description):
                 ],
                 })
         return_value = facets
-    if debug:
-        return hashtags
     return return_value
 
 
