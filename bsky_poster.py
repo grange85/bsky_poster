@@ -6,10 +6,8 @@ import sys
 from bs4 import BeautifulSoup
 import configparser
 from datetime import datetime, timezone
-from pprint import pprint
 from html import unescape
 import re
-import inspect
 
 # Constants
 BLUESKY_API_ENDPOINT = "https://bsky.social/xrpc/com.atproto.repo.createRecord"
@@ -109,7 +107,6 @@ def prepare_post_for_bluesky(postdata):
     truncate = 300
     if postdata['content'].find('---') > 0:
         truncate = postdata['content'].find('---')
-    print(truncate)
     post_structure = {
         "$type": "app.bsky.feed.post",
         "text": postdata['content'][:truncate+1],
