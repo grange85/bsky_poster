@@ -106,9 +106,13 @@ def prepare_post_for_bluesky(postdata):
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post structure for Bluesky
     facets = []
+    truncate = 300
+    if postdata['content'].find('---') > 0:
+        truncate = postdata['content'].find('---')
+    print(truncate)
     post_structure = {
         "$type": "app.bsky.feed.post",
-        "text": postdata['content'],
+        "text": postdata['content'][:truncate+1],
         "createdAt": now
             }
     if postdata['hashtags'] != False:
