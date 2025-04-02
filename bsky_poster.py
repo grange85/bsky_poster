@@ -50,7 +50,11 @@ def get_api_key(did, app_password):
 def get_rss_content(postdata):
 
     feedout = feedparser.parse(postdata['feeduri'])
-    postdata['title'] = feedout.entries[0].title.strip()
+    if "instagram" not in postdata['feed']:
+        postdata['title'] = feedout.entries[0].title.strip() + "\n"
+    else:
+        postdata['title'] = ""
+        
     postdata['description'] = feedout.entries[0].description
     postdata['link'] = feedout.entries[0].link
     postdata['guid'] = feedout.entries[0].guid
@@ -67,7 +71,7 @@ def get_rss_content(postdata):
     # remove unwanted line from flickr feeds
     post_content = re.sub(r'grange85 posted a photo:\n', '', post_content)
     # add title
-    postdata['content'] = unescape(f"{postdata['title'].strip()}\n{post_content}")
+    postdata['content'] = unescape(f"{postdata['title'].strip()}{post_content}")
     postdata['hashtags'] = get_hashtags(postdata['content'])
     postdata['uri'] = get_url(postdata['content'])
     return postdata
@@ -104,7 +108,7 @@ def prepare_post_for_bluesky(postdata):
     now = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     # The post structure for Bluesky
     facets = []
-    truncate = 300
+    truncate = 299
     if postdata['content'].find('---') > 0:
         truncate = postdata['content'].find('---')
     post_structure = {
@@ -208,7 +212,6 @@ def get_embed_url_card(key, url):
 
 
 def publish_on_bluesky(postdata):
-
     # The complete record for the Bluesky post, including our structured content
     post_record = {
         "collection": "app.bsky.feed.post",
@@ -234,9 +237,10 @@ def publish_on_bluesky(postdata):
                 config.write(configfile)
             return True
         else:
-            return False
+            return response['message']
     else:
-        return False
+        #return False
+        return response['message']
 
 def main():
     config = rw_config('read')
@@ -259,8 +263,8 @@ def main():
             postdata['payload'] = prepare_post_for_bluesky(postdata)
             response = publish_on_bluesky(postdata)
             if response == True:
-                print(f"\t{postdata['title']} successfully posted to {postdata['handle']}\n")
+                print(f"\t{postdata['feed']} successfully posted to {postdata['handle']}\n\tcontent: {postdata['content']}\n")
             else:
-                print("\tPost failed\n")
+                print(f"\t{response}")
 if __name__ == '__main__':
     sys.exit(main())  
