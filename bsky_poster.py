@@ -50,6 +50,11 @@ def get_api_key(did, app_password):
 def get_rss_content(postdata):
 
     feedout = feedparser.parse(postdata['feeduri'])
+
+    if len(feedout.entries) == 0:
+        print("\tNo entries\n")
+        return False
+
     if "instagram" not in postdata['feed']:
         postdata['title'] = feedout.entries[0].title.strip() + "\n"
     else:
@@ -71,7 +76,7 @@ def get_rss_content(postdata):
     # remove unwanted line from flickr feeds
     post_content = re.sub(r'grange85 posted a photo:\n', '', post_content)
     # add title
-    postdata['content'] = unescape(f"{postdata['title'].strip()}{post_content}")
+    postdata['content'] = unescape(f"{postdata['title'].strip()} {post_content}")
     postdata['hashtags'] = get_hashtags(postdata['content'])
     postdata['uri'] = get_url(postdata['content'])
     return postdata
@@ -168,7 +173,7 @@ def get_embed_url_card(key, url):
             "User-Agent": "Grange85Bot/0.0 (https://en.wikipedia.org/wiki/User:Grange85)",
             }
     headers2 = {
-            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0",
+            "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0",
             }
     resp = requests.get(url, headers=headers)
     resp.encoding = 'utf-8'
