@@ -60,7 +60,7 @@ def get_rss_content(postdata):
     else:
         postdata['title'] = ""
         
-    postdata['description'] = feedout.entries[0].description
+    postdata['description'] = feedout.entries[0].description.split("---",1)[0]
     postdata['link'] = feedout.entries[0].link
     postdata['guid'] = feedout.entries[0].guid
 
